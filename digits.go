@@ -44,9 +44,10 @@ func Default() *Digits {
 }
 
 func (dig *Digits) ServeHTTP(w http.ResponseWriter, r *http.Request, next http.HandlerFunc) {
-	identity = Identity{}
+	identity := Identity{}
+	var err error
 	if dig.PhoneNumber == "" {
-		identity, err := Verify(dig.Provider, r.Header.Get(dig.CredentialsHeader), dig.Client)
+		identity, err = Verify(dig.Provider, r.Header.Get(dig.CredentialsHeader), dig.Client)
 		if err != nil {
 			dig.ErrorHandler(w, r, err)
 			return
