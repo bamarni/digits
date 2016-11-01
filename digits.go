@@ -29,6 +29,7 @@ type Digits struct {
 	CredentialsHeader string
 	Client            *http.Client
 	ErrorHandler      errorHandler
+	PhoneNumber       string
 }
 
 func Default() *Digits {
@@ -43,10 +44,15 @@ func Default() *Digits {
 }
 
 func (dig *Digits) ServeHTTP(w http.ResponseWriter, r *http.Request, next http.HandlerFunc) {
-	identity, err := Verify(dig.Provider, r.Header.Get(dig.CredentialsHeader), dig.Client)
-	if err != nil {
-		dig.ErrorHandler(w, r, err)
-		return
+	identity = Identity{}
+	if dig.PhoneNumber == "" {
+		identity, err := Verify(dig.Provider, r.Header.Get(dig.CredentialsHeader), dig.Client)
+		if err != nil {
+			dig.ErrorHandler(w, r, err)
+			return
+		}
+	} else {
+		identity.PhoneNumber = dig.PhoneNumber
 	}
 
 	ctx := context.WithValue(r.Context(), Key, identity)
