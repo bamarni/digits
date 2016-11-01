@@ -8,8 +8,8 @@ This package requires Go +1.7
 
 ### Standalone
 
-```
-main
+``` go
+package main
 
 import (
 	"net/http"
@@ -19,7 +19,7 @@ import (
 )
 
 func main() {
-	identity, err := Verify(
+	identity, err := digits.Verify(
 		"https://api.digits.com/1.1/sdk/account.json",
 		"OAuth oauth_consumer_key=[...] oauth_*=[...]",
 		http.DefaultClient,
@@ -33,7 +33,7 @@ func main() {
 The default handler throws a HTTP 401 response in case of authentication failure.
 Otherwise, user identity can be retrieved through the request context :
 
-```
+``` go
 package main
 
 import (
@@ -61,7 +61,7 @@ func main() {
 In dev environment, you can skip authentication to Digits API and use a static
 phone number instead :
 
-```
+``` go
 digitsMiddleware := &digits.Digits{
 	PhoneNumber: "+33123456789",
 }
