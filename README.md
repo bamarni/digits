@@ -24,6 +24,7 @@ func main() {
 		"OAuth oauth_consumer_key=[...] oauth_*=[...]",
 		http.DefaultClient,
 	)
+	// println(identity.PhoneNumber)
 	// ...
 }
 ```
@@ -46,13 +47,13 @@ import (
 func main() {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		identity := r.Context().Value(digits.Key).(digits.Identity)
+		identity := r.Context().Value(digits.Key).(*digits.Identity)
 		fmt.Fprintf(w, "Can I reach you at %s?", identity.PhoneNumber)
 	})
 
 	n := negroni.Classic()
-	n.UseHandler(mux)
 	n.Use(digits.Default())
+	n.UseHandler(mux)
 
 	http.ListenAndServe(":3000", n)
 }
