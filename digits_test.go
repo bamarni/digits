@@ -58,12 +58,14 @@ func TestFromRequestSuccess(t *testing.T) {
 
 	u, _ := url.Parse(ts.URL)
 	dig := &Digits{
-		Provider:  ts.URL,
-		Whitelist: []string{u.Host},
-		Client:    http.DefaultClient,
+		ProviderHeader: "X-Auth-Service-Provider",
+		Whitelist:      []string{u.Host},
+		Client:         http.DefaultClient,
 	}
 
 	req := httptest.NewRequest("GET", "http://example.com", nil)
+	req.Header.Set(dig.ProviderHeader, ts.URL)
+
 	_, err := dig.FromRequest(req)
 
 	assert.NoError(t, err)

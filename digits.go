@@ -27,9 +27,9 @@ type Identity struct {
 type errorHandler func(w http.ResponseWriter, r *http.Request, err error)
 
 type Digits struct {
-	Provider          string
-	Whitelist         []string
+	ProviderHeader    string
 	CredentialsHeader string
+	Whitelist         []string
 	Client            *http.Client
 	ErrorHandler      errorHandler
 	PhoneNumber       string
@@ -37,9 +37,9 @@ type Digits struct {
 
 func Default() *Digits {
 	return &Digits{
-		Provider:          "https://api.digits.com/1.1/sdk/account.json",
-		Whitelist:         []string{"api.digits.com", "api.twitter.com"},
+		ProviderHeader:    "X-Auth-Service-Provider",
 		CredentialsHeader: "X-Verify-Credentials-Authorization",
+		Whitelist:         []string{"api.digits.com", "api.twitter.com"},
 		Client: &http.Client{
 			Timeout: 10 * time.Second,
 		},
@@ -64,7 +64,7 @@ func (dig *Digits) FromRequest(r *http.Request) (*Identity, error) {
 	if dig.PhoneNumber != "" {
 		return &Identity{PhoneNumber: dig.PhoneNumber}, nil
 	}
-	provider := dig.Provider
+	provider := r.Header.Get(dig.ProviderHeader)
 	u, err := url.Parse(provider)
 	if err != nil {
 		return nil, err
@@ -80,7 +80,7 @@ func (dig *Digits) FromRequest(r *http.Request) (*Identity, error) {
 		return nil, errors.New("unauthorized service provider")
 	}
 
-	return Verify(dig.Provider, r.Header.Get(dig.CredentialsHeader), dig.Client)
+	return Verify(provider, r.Header.Get(dig.CredentialsHeader), dig.Client)
 }
 
 func Verify(serviceProvider, credentials string, client *http.Client) (*Identity, error) {
