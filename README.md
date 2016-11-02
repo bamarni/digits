@@ -63,9 +63,9 @@ In dev environment, you can skip authentication to Digits API and use a static
 phone number instead :
 
 ``` go
-digitsMiddleware := &digits.Digits{
+digitsMiddleware := digits.New(Options{
 	PhoneNumber: "+33123456789",
-}
+})
 n := negroni.New(digitsMiddleware)
 // ...
 ```

@@ -15,6 +15,15 @@ type key int
 
 const Key key = 0
 
+type Options struct {
+	ProviderHeader    string
+	CredentialsHeader string
+	Whitelist         []string
+	Client            *http.Client
+	ErrorHandler      errorHandler
+	PhoneNumber       string
+}
+
 type Identity struct {
 	PhoneNumber      string `json:"phone_number"`
 	Id               int    `json:"id"`
@@ -27,30 +36,64 @@ type Identity struct {
 type errorHandler func(w http.ResponseWriter, r *http.Request, err error)
 
 type Digits struct {
-	ProviderHeader    string
-	CredentialsHeader string
-	Whitelist         []string
-	Client            *http.Client
-	ErrorHandler      errorHandler
-	PhoneNumber       string
+	providerHeader    string
+	credentialsHeader string
+	whitelist         []string
+	client            *http.Client
+	errorHandler      errorHandler
+	phoneNumber       string
+}
+
+func New(options Options) *Digits {
+	dig := &Digits{}
+
+	if options.ProviderHeader == "" {
+		dig.providerHeader = "X-Auth-Service-Provider"
+	} else {
+		dig.providerHeader = options.ProviderHeader
+	}
+
+	if options.CredentialsHeader == "" {
+		dig.credentialsHeader = "X-Verify-Credentials-Authorization"
+	} else {
+		dig.credentialsHeader = options.CredentialsHeader
+	}
+
+	if len(options.Whitelist) == 0 {
+		dig.whitelist = []string{"api.digits.com", "api.twitter.com"}
+	} else {
+		dig.whitelist = options.Whitelist
+	}
+
+	if options.Client == nil {
+		dig.client = &http.Client{
+			Timeout: 10 * time.Second,
+		}
+	} else {
+		dig.client = options.Client
+	}
+
+	if options.ErrorHandler == nil {
+		dig.errorHandler = defaultErrorHandler
+	} else {
+		dig.errorHandler = options.ErrorHandler
+	}
+
+	if options.PhoneNumber != "" {
+		dig.phoneNumber = options.PhoneNumber
+	}
+
+	return dig
 }
 
 func Default() *Digits {
-	return &Digits{
-		ProviderHeader:    "X-Auth-Service-Provider",
-		CredentialsHeader: "X-Verify-Credentials-Authorization",
-		Whitelist:         []string{"api.digits.com", "api.twitter.com"},
-		Client: &http.Client{
-			Timeout: 10 * time.Second,
-		},
-		ErrorHandler: defaultErrorHandler,
-	}
+	return New(Options{})
 }
 
 func (dig *Digits) ServeHTTP(w http.ResponseWriter, r *http.Request, next http.HandlerFunc) {
 	identity, err := dig.FromRequest(r)
 	if err != nil {
-		dig.ErrorHandler(w, r, err)
+		dig.errorHandler(w, r, err)
 		return
 	}
 
@@ -61,17 +104,17 @@ func (dig *Digits) ServeHTTP(w http.ResponseWriter, r *http.Request, next http.H
 }
 
 func (dig *Digits) FromRequest(r *http.Request) (*Identity, error) {
-	if dig.PhoneNumber != "" {
-		return &Identity{PhoneNumber: dig.PhoneNumber}, nil
+	if dig.phoneNumber != "" {
+		return &Identity{PhoneNumber: dig.phoneNumber}, nil
 	}
-	provider := r.Header.Get(dig.ProviderHeader)
+	provider := r.Header.Get(dig.providerHeader)
 	u, err := url.Parse(provider)
 	if err != nil {
 		return nil, err
 	}
 
 	matched := false
-	for _, domain := range dig.Whitelist {
+	for _, domain := range dig.whitelist {
 		if matched, _ = regexp.MatchString(domain, u.Host); matched == true {
 			break
 		}
@@ -80,7 +123,7 @@ func (dig *Digits) FromRequest(r *http.Request) (*Identity, error) {
 		return nil, errors.New("unauthorized service provider")
 	}
 
-	return Verify(provider, r.Header.Get(dig.CredentialsHeader), dig.Client)
+	return Verify(provider, r.Header.Get(dig.credentialsHeader), dig.client)
 }
 
 func Verify(serviceProvider, credentials string, client *http.Client) (*Identity, error) {

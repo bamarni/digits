@@ -40,7 +40,7 @@ func TestUnauthorized(t *testing.T) {
 }
 
 func TestFromRequestStatic(t *testing.T) {
-	dig := &Digits{PhoneNumber: "+33123456789"}
+	dig := New(Options{PhoneNumber: "+33123456789"})
 
 	req := httptest.NewRequest("GET", "http://example.com/", nil)
 	identity, err := dig.FromRequest(req)
@@ -57,14 +57,12 @@ func TestFromRequestSuccess(t *testing.T) {
 	defer ts.Close()
 
 	u, _ := url.Parse(ts.URL)
-	dig := &Digits{
-		ProviderHeader: "X-Auth-Service-Provider",
-		Whitelist:      []string{u.Host},
-		Client:         http.DefaultClient,
-	}
+	dig := New(Options{
+		Whitelist: []string{u.Host},
+	})
 
 	req := httptest.NewRequest("GET", "http://example.com", nil)
-	req.Header.Set(dig.ProviderHeader, ts.URL)
+	req.Header.Set(dig.providerHeader, ts.URL)
 
 	_, err := dig.FromRequest(req)
 
@@ -72,9 +70,9 @@ func TestFromRequestSuccess(t *testing.T) {
 }
 
 func TestFromRequestWhitelistUnauthorized(t *testing.T) {
-	dig := &Digits{
+	dig := New(Options{
 		Whitelist: []string{"*.example2.com"},
-	}
+	})
 
 	req := httptest.NewRequest("GET", "http://example.com/", nil)
 	_, err := dig.FromRequest(req)
