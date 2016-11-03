@@ -11,6 +11,10 @@ import (
 	"time"
 )
 
+var defaultClient = &http.Client{
+	Timeout: 10 * time.Second,
+}
+
 type key int
 
 const Key key = 0
@@ -18,19 +22,23 @@ const Key key = 0
 type Options struct {
 	ProviderHeader    string
 	CredentialsHeader string
-	Whitelist         []string
 	Client            *http.Client
 	ErrorHandler      errorHandler
 	PhoneNumber       string
 }
 
+type AccessToken struct {
+	Token  string `json:"token"`
+	Secret string `json:"secret"`
+}
+
 type Identity struct {
-	PhoneNumber      string `json:"phone_number"`
-	Id               int    `json:"id"`
-	IdStr            string `json:"id_str"`
-	VerificationType string `json:"verification_type"`
-	CreatedAt        string `json:"created_at"`
-	// TODO "access_token":{"token":"XXXXXXX-XXXXXX","secret":"XXXXXXXXXX"}
+	PhoneNumber      string      `json:"phone_number"`
+	Id               int         `json:"id"`
+	IdStr            string      `json:"id_str"`
+	VerificationType string      `json:"verification_type"`
+	CreatedAt        string      `json:"created_at"`
+	AccessToken      AccessToken `json:"access_token"`
 }
 
 type errorHandler func(w http.ResponseWriter, r *http.Request, err error)
@@ -45,7 +53,9 @@ type Digits struct {
 }
 
 func New(options Options) *Digits {
-	dig := &Digits{}
+	dig := &Digits{
+		whitelist: []string{"api.digits.com", "api.twitter.com"},
+	}
 
 	if options.ProviderHeader == "" {
 		dig.providerHeader = "X-Auth-Service-Provider"
@@ -59,16 +69,8 @@ func New(options Options) *Digits {
 		dig.credentialsHeader = options.CredentialsHeader
 	}
 
-	if len(options.Whitelist) == 0 {
-		dig.whitelist = []string{"api.digits.com", "api.twitter.com"}
-	} else {
-		dig.whitelist = options.Whitelist
-	}
-
 	if options.Client == nil {
-		dig.client = &http.Client{
-			Timeout: 10 * time.Second,
-		}
+		dig.client = defaultClient
 	} else {
 		dig.client = options.Client
 	}
@@ -133,6 +135,9 @@ func Verify(serviceProvider, credentials string, client *http.Client) (*Identity
 	}
 	req.Header.Set("Authorization", credentials)
 
+	if nil == client {
+		client = defaultClient
+	}
 	resp, err := client.Do(req)
 	if err != nil {
 		return nil, err

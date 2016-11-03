@@ -15,14 +15,13 @@ import (
 	"net/http"
 
 	"github.com/bamarni/digits"
-	"github.com/urfave/negroni"
 )
 
 func main() {
 	identity, err := digits.Verify(
 		"https://api.digits.com/1.1/sdk/account.json",
 		"OAuth oauth_consumer_key=[...] oauth_*=[...]",
-		http.DefaultClient,
+		nil,
 	)
 	// println(identity.PhoneNumber)
 	// ...
@@ -63,7 +62,7 @@ In dev environment, you can skip authentication to Digits API and use a static
 phone number instead :
 
 ``` go
-digitsMiddleware := digits.New(Options{
+digitsMiddleware := digits.New(digits.Options{
 	PhoneNumber: "+33123456789",
 })
 n := negroni.New(digitsMiddleware)

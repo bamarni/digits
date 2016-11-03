@@ -26,6 +26,9 @@ func TestSuccess(t *testing.T) {
 	assert.Equal(t, "716736250749784014", identity.IdStr)
 	assert.Equal(t, 716736250749784014, identity.Id)
 	assert.Equal(t, "Tue Nov 01 07:34:53 +0000 2016", identity.CreatedAt) // TODO : parse as time.Time? Maybe use another field for this.
+	assert.Equal(t, "XXXXXXX-XXXXXXYZ", identity.AccessToken.Token)
+	assert.Equal(t, "XXXXXXXXYZ", identity.AccessToken.Secret)
+
 }
 
 func TestUnauthorized(t *testing.T) {
@@ -34,7 +37,7 @@ func TestUnauthorized(t *testing.T) {
 	}))
 	defer ts.Close()
 
-	_, err := Verify(ts.URL, "Dummy", http.DefaultClient)
+	_, err := Verify(ts.URL, "Dummy", nil)
 
 	assert.Error(t, err)
 }
@@ -57,9 +60,8 @@ func TestFromRequestSuccess(t *testing.T) {
 	defer ts.Close()
 
 	u, _ := url.Parse(ts.URL)
-	dig := New(Options{
-		Whitelist: []string{u.Host},
-	})
+	dig := Default()
+	dig.whitelist = []string{u.Host}
 
 	req := httptest.NewRequest("GET", "http://example.com", nil)
 	req.Header.Set(dig.providerHeader, ts.URL)
@@ -70,9 +72,9 @@ func TestFromRequestSuccess(t *testing.T) {
 }
 
 func TestFromRequestWhitelistUnauthorized(t *testing.T) {
-	dig := New(Options{
-		Whitelist: []string{"*.example2.com"},
-	})
+	dig := Digits{
+		whitelist: []string{"*.example2.com"},
+	}
 
 	req := httptest.NewRequest("GET", "http://example.com/", nil)
 	_, err := dig.FromRequest(req)
