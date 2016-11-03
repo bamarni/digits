@@ -73,11 +73,13 @@ func TestFromRequestSuccess(t *testing.T) {
 
 func TestFromRequestWhitelistUnauthorized(t *testing.T) {
 	dig := Digits{
-		whitelist: []string{"*.example2.com"},
+		whitelist: []string{"api.example2.com"},
 	}
 
 	req := httptest.NewRequest("GET", "http://example.com/", nil)
+	req.Header.Set(dig.providerHeader, "http://api.example3.com")
+
 	_, err := dig.FromRequest(req)
 
-	assert.Error(t, err)
+	assert.Error(t, err, "unauthorized service provider")
 }

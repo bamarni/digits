@@ -7,7 +7,6 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/url"
-	"regexp"
 	"time"
 )
 
@@ -117,10 +116,12 @@ func (dig *Digits) FromRequest(r *http.Request) (*Identity, error) {
 
 	matched := false
 	for _, domain := range dig.whitelist {
-		if matched, _ = regexp.MatchString(domain, u.Host); matched == true {
+		if domain == u.Host {
+			matched = true
 			break
 		}
 	}
+
 	if matched == false {
 		return nil, errors.New("unauthorized service provider")
 	}
