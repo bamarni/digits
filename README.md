@@ -14,7 +14,7 @@ package main
 import (
 	"net/http"
 
-	"github.com/bamarni/digits"
+	"gopkg.in/bamarni/digits.v1"
 )
 
 func main() {
@@ -39,8 +39,8 @@ package main
 import (
 	"net/http"
 
-	"github.com/bamarni/digits"
 	"github.com/urfave/negroni"
+	"gopkg.in/bamarni/digits.v1"
 )
 
 func main() {
