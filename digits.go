@@ -5,8 +5,10 @@ import (
 	"encoding/json"
 	"errors"
 	"io/ioutil"
+	"log"
 	"net/http"
 	"net/url"
+	"os"
 	"time"
 )
 
@@ -24,6 +26,7 @@ type Options struct {
 	Client            *http.Client
 	ErrorHandler      errorHandler
 	PhoneNumber       string
+	Debug             bool
 }
 
 type AccessToken struct {
@@ -43,6 +46,7 @@ type Identity struct {
 type errorHandler func(w http.ResponseWriter, r *http.Request, err error)
 
 type Digits struct {
+	Logger            *log.Logger
 	providerHeader    string
 	credentialsHeader string
 	whitelist         []string
@@ -84,6 +88,10 @@ func New(options Options) *Digits {
 		dig.phoneNumber = options.PhoneNumber
 	}
 
+	if options.Debug {
+		dig.Logger = log.New(os.Stdout, "[digits] ", log.LstdFlags)
+	}
+
 	return dig
 }
 
@@ -94,6 +102,9 @@ func Default() *Digits {
 func (dig *Digits) ServeHTTP(w http.ResponseWriter, r *http.Request, next http.HandlerFunc) {
 	identity, err := dig.FromRequest(r)
 	if err != nil {
+		if dig.Logger != nil {
+			dig.Logger.Printf("Verification failed : %s", err)
+		}
 		dig.errorHandler(w, r, err)
 		return
 	}
@@ -126,7 +137,16 @@ func (dig *Digits) FromRequest(r *http.Request) (*Identity, error) {
 		return nil, errors.New("unauthorized service provider")
 	}
 
-	return Verify(provider, r.Header.Get(dig.credentialsHeader), dig.client)
+	credentials := r.Header.Get(dig.credentialsHeader)
+	if dig.Logger != nil {
+		dig.Logger.Printf(
+			" Verifying '%s' with provider '%s'",
+			credentials,
+			provider,
+		)
+	}
+
+	return Verify(provider, credentials, dig.client)
 }
 
 func Verify(serviceProvider, credentials string, client *http.Client) (*Identity, error) {

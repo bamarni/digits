@@ -10,11 +10,13 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+var httpHandler = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
+	fmt.Fprint(w, `{"phone_number":"+331234567890","access_token":{"token":"XXXXXXX-XXXXXXYZ","secret":"XXXXXXXXYZ"},"id_str":"716736250749784014","verification_type":"sms","id":716736250749784014,"created_at":"Tue Nov 01 07:34:53 +0000 2016"}`)
+})
+
 func TestSuccess(t *testing.T) {
-	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json; charset=UTF-8")
-		fmt.Fprint(w, `{"phone_number":"+331234567890","access_token":{"token":"XXXXXXX-XXXXXXYZ","secret":"XXXXXXXXYZ"},"id_str":"716736250749784014","verification_type":"sms","id":716736250749784014,"created_at":"Tue Nov 01 07:34:53 +0000 2016"}`)
-	}))
+	ts := httptest.NewServer(httpHandler)
 	defer ts.Close()
 
 	identity, err := Verify(ts.URL, "Dummy", http.DefaultClient)
@@ -28,7 +30,6 @@ func TestSuccess(t *testing.T) {
 	assert.Equal(t, "Tue Nov 01 07:34:53 +0000 2016", identity.CreatedAt) // TODO : parse as time.Time? Maybe use another field for this.
 	assert.Equal(t, "XXXXXXX-XXXXXXYZ", identity.AccessToken.Token)
 	assert.Equal(t, "XXXXXXXXYZ", identity.AccessToken.Secret)
-
 }
 
 func TestUnauthorized(t *testing.T) {
@@ -53,10 +54,7 @@ func TestFromRequestStatic(t *testing.T) {
 }
 
 func TestFromRequestSuccess(t *testing.T) {
-	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json; charset=UTF-8")
-		fmt.Fprint(w, `{"phone_number":"+331234567890","access_token":{"token":"XXXXXXX-XXXXXXYZ","secret":"XXXXXXXXYZ"},"id_str":"716736250749784014","verification_type":"sms","id":716736250749784014,"created_at":"Tue Nov 01 07:34:53 +0000 2016"}`)
-	}))
+	ts := httptest.NewServer(httpHandler)
 	defer ts.Close()
 
 	u, _ := url.Parse(ts.URL)
