@@ -51,7 +51,7 @@ type Digits struct {
 	credentialsHeader string
 	whitelist         []string
 	client            *http.Client
-	errorHandler      errorHandler
+	errorHandler      ErrorHandler
 	phoneNumber       string
 }
 
