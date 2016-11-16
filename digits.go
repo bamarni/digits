@@ -24,7 +24,7 @@ type Options struct {
 	ProviderHeader    string
 	CredentialsHeader string
 	Client            *http.Client
-	ErrorHandler      errorHandler
+	ErrorHandler      ErrorHandler
 	PhoneNumber       string
 	Debug             bool
 }
@@ -43,7 +43,7 @@ type Identity struct {
 	AccessToken      AccessToken `json:"access_token"`
 }
 
-type errorHandler func(w http.ResponseWriter, r *http.Request, err error)
+type ErrorHandler func(w http.ResponseWriter, r *http.Request, err error)
 
 type Digits struct {
 	Logger            *log.Logger
