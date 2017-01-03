@@ -27,6 +27,7 @@ type Options struct {
 	ErrorHandler      ErrorHandler
 	PhoneNumber       string
 	Debug             bool
+	Store             Store
 }
 
 type AccessToken struct {
@@ -43,6 +44,11 @@ type Identity struct {
 	AccessToken      AccessToken `json:"access_token"`
 }
 
+type Store interface {
+	Load(credentials string) *Identity
+	Save(credentials string, identity *Identity)
+}
+
 type ErrorHandler func(w http.ResponseWriter, r *http.Request, err error)
 
 type Digits struct {
@@ -53,6 +59,7 @@ type Digits struct {
 	client            *http.Client
 	errorHandler      ErrorHandler
 	phoneNumber       string
+	store             Store
 }
 
 func New(options Options) *Digits {
@@ -90,6 +97,10 @@ func New(options Options) *Digits {
 
 	if options.Debug {
 		dig.Logger = log.New(os.Stdout, "[digits] ", log.LstdFlags)
+	}
+
+	if options.Store != nil {
+		dig.store = options.Store
 	}
 
 	return dig
@@ -140,13 +151,25 @@ func (dig *Digits) FromRequest(r *http.Request) (*Identity, error) {
 	credentials := r.Header.Get(dig.credentialsHeader)
 	if dig.Logger != nil {
 		dig.Logger.Printf(
-			" Verifying '%s' with provider '%s'",
+			"Verifying '%s' with provider '%s'",
 			credentials,
 			provider,
 		)
 	}
+	if dig.store != nil {
+		if identity := dig.store.Load(credentials); identity != nil {
+			if dig.Logger != nil {
+				dig.Logger.Print("Identity loaded from store")
+			}
+			return identity, nil
+		}
+	}
 
-	return Verify(provider, credentials, dig.client)
+	identity, err := Verify(provider, credentials, dig.client)
+	if dig.store != nil && err == nil {
+		dig.store.Save(credentials, identity)
+	}
+	return identity, err
 }
 
 func Verify(serviceProvider, credentials string, client *http.Client) (*Identity, error) {

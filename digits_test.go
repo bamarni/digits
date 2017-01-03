@@ -81,3 +81,22 @@ func TestFromRequestWhitelistUnauthorized(t *testing.T) {
 
 	assert.Error(t, err, "unauthorized service provider")
 }
+
+func TestFromRequestWithStore(t *testing.T) {
+	ts := httptest.NewServer(httpHandler)
+	defer ts.Close()
+
+	dig := New(Options{Store: NewMemoryStore()})
+	u, _ := url.Parse(ts.URL)
+	dig.whitelist = []string{u.Host}
+
+	req := httptest.NewRequest("GET", "http://example.com", nil)
+	req.Header.Set(dig.providerHeader, ts.URL)
+	credentials := "Dummy"
+	req.Header.Set(dig.credentialsHeader, credentials)
+
+	identity, err := dig.FromRequest(req)
+
+	assert.NoError(t, err)
+	assert.Equal(t, identity, dig.store.Load(credentials))
+}
