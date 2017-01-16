@@ -65,6 +65,7 @@ type Digits struct {
 func New(options Options) *Digits {
 	dig := &Digits{
 		whitelist: []string{"api.digits.com", "api.twitter.com"},
+		store:     options.Store,
 	}
 
 	if options.ProviderHeader == "" {
@@ -97,10 +98,6 @@ func New(options Options) *Digits {
 
 	if options.Debug {
 		dig.Logger = log.New(os.Stdout, "[digits] ", log.LstdFlags)
-	}
-
-	if options.Store != nil {
-		dig.store = options.Store
 	}
 
 	return dig

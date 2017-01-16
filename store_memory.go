@@ -15,7 +15,7 @@ func NewMemoryStore() *MemoryStore {
 
 func (s *MemoryStore) Load(creds string) *Identity {
 	s.mu.RLock()
-	idt, _ := s.idts[creds]
+	idt := s.idts[creds]
 	s.mu.RUnlock()
 	return idt
 }
