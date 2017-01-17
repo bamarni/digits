@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"io/ioutil"
 	"log"
 	"net/http"
 	"net/url"
@@ -183,16 +182,13 @@ func Verify(serviceProvider, credentials string, client *http.Client) (*Identity
 	if err != nil {
 		return nil, err
 	}
+	defer resp.Body.Close()
 	if resp.StatusCode != 200 {
 		return nil, errors.New("unsuccessful response")
 	}
-	body, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		return nil, err
-	}
 
 	identity := &Identity{}
-	err = json.Unmarshal(body, identity)
+	err = json.NewDecoder(resp.Body).Decode(identity)
 
 	return identity, err
 }
